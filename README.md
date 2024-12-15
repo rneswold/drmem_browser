@@ -10,18 +10,12 @@ This project was built using VSCode. If you wish to contribute, using VSCode is 
 
 ### Clone the Project
 
-First, pull the latest source from GitHub and dependencies from `pub.dev`:
+Pull the latest source from GitHub and dependencies from `pub.dev`:
 
 ```shell
 $ git clone git@github.com:DrMemCS/drmem_browser.git
 $ cd drmem_browser
 $ flutter pub get
-```
-
-Before the project can be built, the GraphQL files need to be processed. This can be done with the command:
-
-```shell
-$ flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
 ### Make a Development Branch
@@ -73,8 +67,8 @@ Here's an informal list of features to be added. If you're interested in helping
     - [X] Devices
     - [X] Comments
     - [ ] Plots
-- [ ] Create a "Widget" that implements the GraphQL API. Use the approach done by Bloc in which the `BuildContext` gains a field; in our case, a `drmem` field that has methods that use the GraphQL API.
-  - [ ] This widget should be extracted and packaged so that other developers can make their own Flutter apps that talk to DrMem.
+- [X] Create a "Widget" that implements the GraphQL API. Use the approach done by Bloc in which the `BuildContext` gains a field; in our case, a `drmem` field that has methods that use the GraphQL API.
+  - [X] This widget should be extracted and packaged so that other developers can make their own Flutter apps that talk to DrMem.
   - [ ] Needs to monitor when it goes in and out of the background. As it transits through these states, it must:
     - [ ] Shutdown and restore the mDNS service.
     - [ ] Shutdown and restore GraphQL subscriptions.
