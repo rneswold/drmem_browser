@@ -62,23 +62,48 @@ class DeviceWidget extends StatelessWidget {
   // The constructor simply builds a function that is used to set up the stream
   // of readings from a device.
 
-  DeviceWidget({String? label, required Device? device, super.key})
-      : _builder = device != null
-            ? _buildStream(label: label, device: device)
-            : _singleton;
+  DeviceWidget(
+      {String? label,
+      required Device? device,
+      required String? node,
+      super.key})
+      : _builder = device != null && node != null
+            ? _buildStream(label: label, device: device, node: node)
+            : _singleton(device, node);
 
   // Returns a stream that emits one value. This is used when the user hasn't
   //  defined a device in the row.
 
-  static Stream<_DeviceModel> _singleton(BuildContext context) async* {
+  static Stream<_DeviceModel> Function(BuildContext) _singleton(
+      Device? device, String? node) {
     dev.log("building empty stream", name: "DeviceWidget");
 
-    yield const _DeviceModel(
-        label: "no device specified",
-        device: null,
-        units: null,
-        settable: false,
-        child: _DeviceRowWrapper());
+    return (BuildContext context) async* {
+      if (device == null) {
+        if (node == null) {
+          yield _DeviceModel(
+              label: "no device and node specified",
+              device: device,
+              units: null,
+              settable: false,
+              child: _DeviceRowWrapper(node: null));
+        } else {
+          yield _DeviceModel(
+              label: "no device specified",
+              device: device,
+              units: null,
+              settable: false,
+              child: _DeviceRowWrapper(node: null));
+        }
+      } else if (node == null) {
+        yield const _DeviceModel(
+            label: "no node specified",
+            device: null,
+            units: null,
+            settable: false,
+            child: _DeviceRowWrapper(node: null));
+      }
+    };
   }
 
   // This private, helper method builds a closure which creates a stream that
@@ -86,18 +111,18 @@ class DeviceWidget extends StatelessWidget {
   // a `StatelessWidget` since all the updates are returned by the stream.
 
   static Stream<_DeviceModel>? Function(BuildContext) _buildStream(
-      {String? label, required Device device}) {
+      {String? label, required Device device, required String node}) {
     final cookedLabel = label ?? device.name;
     dev.log("building monitor stream", name: "DeviceWidget");
 
     return (BuildContext context) async* {
-      dev.log("configured for ${device.name}@${device.node}",
-          name: "DeviceWidget");
+      dev.log("configured for ${device.name}@$node", name: "DeviceWidget");
       try {
         // First, get device information from the node. This will tell us
         // whether the device is settable and also provide the units, if any.
 
-        final di = await DrMem.getDeviceInfo(context, device: device);
+        final di =
+            await DrMem.getDeviceInfo(context, node: node, device: device);
 
         // If the query returns one instance of device information, we're good.
 
@@ -111,23 +136,23 @@ class DeviceWidget extends StatelessWidget {
               device: device,
               units: units,
               settable: settable,
-              child: const _DeviceRowWrapper());
+              child: _DeviceRowWrapper(node: node));
 
           // If the widget is still mounted in the tree, stream the readings
           // of the device.
 
           if (context.mounted) {
-            yield* DrMem.monitorDevice(context, device).map((event) =>
+            yield* DrMem.monitorDevice(context, node, device).map((event) =>
                 _DeviceModel(
                     label: cookedLabel,
                     device: device,
                     units: units,
                     settable: settable,
                     reading: (event.stamp, event.value),
-                    child: const _DeviceRowWrapper()));
+                    child: _DeviceRowWrapper(node: node)));
           }
         } else {
-          throw HttpException("bad device ${device.name}@${device.node}");
+          throw HttpException("bad device ${device.name}@$node");
         }
       } catch (ex) {
         // ignore: use_build_context_synchronously
@@ -169,7 +194,9 @@ class DeviceWidget extends StatelessWidget {
 // device model.
 
 class _DeviceRowWrapper extends StatefulWidget {
-  const _DeviceRowWrapper();
+  final String? node;
+
+  const _DeviceRowWrapper({this.node});
 
   @override
   _DeviceRowWrapperState createState() => _DeviceRowWrapperState();
@@ -200,7 +227,7 @@ class _DeviceRowWrapperState extends State<_DeviceRowWrapper> {
                 ),
               ),
             ),
-            const DataWidget(),
+            DataWidget(node: widget.node),
           ],
         ),
         if (_expand) const _DisplayTimestamp(),
@@ -246,10 +273,13 @@ class _DisplayTimestamp extends StatelessWidget {
 class DeviceEditor extends StatefulWidget {
   final int _idx;
   final Device? _device;
+  final String? _node;
   final String _label;
 
-  const DeviceEditor(this._idx, this._device, {String? label, super.key})
-      : _label = label ?? "";
+  const DeviceEditor(this._idx, this._device,
+      {String? node, String? label, super.key})
+      : _node = node,
+        _label = label ?? "";
 
   @override
   State<DeviceEditor> createState() => _DeviceEditorState();
@@ -266,7 +296,7 @@ class _DeviceEditorState extends State<DeviceEditor> {
     super.initState();
     ctrlDevice = TextEditingController(text: widget._device?.name);
     ctrlLabel = TextEditingController(text: widget._label);
-    ctrlNode = TextEditingController(text: widget._device?.node);
+    ctrlNode = TextEditingController(text: widget._node);
   }
 
   @override
@@ -304,8 +334,8 @@ class _DeviceEditorState extends State<DeviceEditor> {
                         onSubmitted: (value) => context.read<Model>().add(
                               UpdateRow(
                                   widget._idx,
-                                  DeviceRow(
-                                      Device(name: value, node: ctrlNode.text),
+                                  DeviceRow(Device(name: value),
+                                      node: ctrlNode.text,
                                       label: ctrlLabel.text,
                                       key: UniqueKey())),
                             )),
@@ -322,8 +352,8 @@ class _DeviceEditorState extends State<DeviceEditor> {
                       onSubmitted: (value) => context.read<Model>().add(
                             UpdateRow(
                                 widget._idx,
-                                DeviceRow(
-                                    Device(name: ctrlDevice.text, node: value),
+                                DeviceRow(Device(name: ctrlDevice.text),
+                                    node: value,
                                     label: ctrlLabel.text,
                                     key: UniqueKey())),
                           )),
@@ -339,9 +369,8 @@ class _DeviceEditorState extends State<DeviceEditor> {
                 onSubmitted: (value) => context.read<Model>().add(
                       UpdateRow(
                           widget._idx,
-                          DeviceRow(
-                              Device(
-                                  name: ctrlDevice.text, node: ctrlNode.text),
+                          DeviceRow(Device(name: ctrlDevice.text),
+                              node: ctrlNode.text,
                               label: value,
                               key: UniqueKey())),
                     )),

@@ -89,7 +89,7 @@ void _testDeserialization() {
         }).content,
         [
           EmptyRow(key: UniqueKey()),
-          DeviceRow(Device(name: "junk", node: "host"), key: UniqueKey())
+          DeviceRow(Device(name: "junk"), key: UniqueKey())
         ]);
     expect(
         PageConfig.fromJson({
@@ -101,7 +101,7 @@ void _testDeserialization() {
         }).content,
         [
           EmptyRow(key: UniqueKey()),
-          DeviceRow(Device(name: "junk", node: "host"), key: UniqueKey())
+          DeviceRow(Device(name: "junk"), key: UniqueKey())
         ]);
     expect(
         PageConfig.fromJson({
@@ -118,8 +118,7 @@ void _testDeserialization() {
         }).content,
         [
           EmptyRow(key: UniqueKey()),
-          DeviceRow(Device(name: "junk", node: "host"),
-              label: "label", key: UniqueKey())
+          DeviceRow(Device(name: "junk"), label: "label", key: UniqueKey())
         ]);
   });
 

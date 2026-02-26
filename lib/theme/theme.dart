@@ -23,7 +23,7 @@ class AppTheme {
     appBarTheme: AppBarTheme(
         backgroundColor: Colors.grey[300],
         actionsIconTheme: const IconThemeData(color: _primColor)),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.grey[300],
     ),
     colorScheme: const ColorScheme.light(
@@ -50,7 +50,7 @@ class AppTheme {
     appBarTheme: AppBarTheme(
         backgroundColor: Colors.grey[850],
         actionsIconTheme: const IconThemeData(color: _primColor)),
-    cardTheme: CardTheme(color: Colors.grey[850]),
+    cardTheme: CardThemeData(color: Colors.grey[850]),
     colorScheme: const ColorScheme.dark(
       primary: _primColor,
       secondary: _secColor,

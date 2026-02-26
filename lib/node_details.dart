@@ -251,10 +251,10 @@ List<Widget> _buildChips(ThemeData td, DeviceInfo info) => [
       if (info.units != null) _buildChip(td, "units: ${info.units}"),
       if (info.history != null) ...[
         _buildChip(td, "points: ${info.history!.totalPoints}"),
+        _buildChip(td,
+            _makeDateChipContent("oldest", info.history!.summary!.$1.stamp)),
         _buildChip(
-            td, _makeDateChipContent("oldest", info.history!.oldest.stamp)),
-        _buildChip(
-            td, _makeDateChipContent("last", info.history!.newest.stamp)),
+            td, _makeDateChipContent("last", info.history!.summary!.$2.stamp)),
       ]
     ];
 
@@ -382,7 +382,7 @@ Future<void> displayNode(NodeInfo node, BuildContext context) async {
 
     if (context.mounted) {
       final deviceInfo = await DrMem.getDeviceInfo(context,
-          device: DevicePattern(node: node.name, name: "*"));
+          node: node.name, device: DevicePattern(name: "*"));
 
       if (context.mounted) {
         showDialog(

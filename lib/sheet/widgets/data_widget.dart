@@ -25,6 +25,7 @@ Widget buildErrorWidget(ThemeData td, String msg) {
 
 class _SettingTextEditor extends StatelessWidget {
   final Device device;
+  final String node;
   final void Function() exitFunc;
   final TextInputType? inpType;
   final DevValue? Function(BuildContext, String) parser;
@@ -32,6 +33,7 @@ class _SettingTextEditor extends StatelessWidget {
   const _SettingTextEditor(
       {required this.device,
       required this.exitFunc,
+      required this.node,
       this.inpType,
       required this.parser});
 
@@ -54,7 +56,7 @@ class _SettingTextEditor extends StatelessWidget {
 
           if (result != null) {
             try {
-              await DrMem.setDevice(context, device, result);
+              await DrMem.setDevice(context, node, device, result);
             } catch (e) {
               // ignore: use_build_context_synchronously
               displayError(context, e.toString());
@@ -128,22 +130,24 @@ extension on DevValue {
 
   // Builds a widget that can edit values of the current object type.
 
-  Widget buildEditor(BuildContext context, void Function() exitFunc) {
+  Widget buildEditor(
+      BuildContext context, String node, void Function() exitFunc) {
     final device = DeviceWidget.getDevice(context)!;
 
     return switch (this) {
-      DevBool() => buildBoolEditor(context, device, exitFunc),
-      DevFlt() => buildFloatEditor(context, device, exitFunc),
-      DevInt() => buildIntegerEditor(context, device, exitFunc),
-      DevStr() => buildStringEditor(context, device, exitFunc),
+      DevBool() => buildBoolEditor(context, device, node, exitFunc),
+      DevFlt() => buildFloatEditor(context, device, node, exitFunc),
+      DevInt() => buildIntegerEditor(context, device, node, exitFunc),
+      DevStr() => buildStringEditor(context, device, node, exitFunc),
       DevColor() => Container()
     };
   }
 
-  Widget buildFloatEditor(
-          BuildContext context, Device device, void Function() exitFunc) =>
+  Widget buildFloatEditor(BuildContext context, Device device, String node,
+          void Function() exitFunc) =>
       _SettingTextEditor(
           device: device,
+          node: node,
           exitFunc: exitFunc,
           inpType: TextInputType.number,
           parser: (context, value) {
@@ -157,10 +161,11 @@ extension on DevValue {
             return null;
           });
 
-  Widget buildIntegerEditor(
-          BuildContext context, Device device, void Function() exitFunc) =>
+  Widget buildIntegerEditor(BuildContext context, Device device, String node,
+          void Function() exitFunc) =>
       _SettingTextEditor(
           device: device,
+          node: node,
           exitFunc: exitFunc,
           inpType: TextInputType.number,
           parser: (context, value) {
@@ -174,10 +179,11 @@ extension on DevValue {
             return null;
           });
 
-  Widget buildStringEditor(
-          BuildContext context, Device device, void Function() exitFunc) =>
+  Widget buildStringEditor(BuildContext context, Device device, String node,
+          void Function() exitFunc) =>
       _SettingTextEditor(
           device: device,
+          node: node,
           exitFunc: exitFunc,
           parser: (_, value) => DevStr(value: value));
 
@@ -188,6 +194,7 @@ extension on DevValue {
   Widget buildBoolEditor(
     BuildContext context,
     Device device,
+    String node,
     void Function() exitFunc,
   ) =>
       Row(
@@ -199,7 +206,7 @@ extension on DevValue {
                 onPressed: () async {
                   exitFunc();
                   await DrMem.setDevice(
-                      context, device, const DevBool(value: true));
+                      context, node, device, const DevBool(value: true));
                 },
                 child: const Text("true")),
           ),
@@ -208,7 +215,7 @@ extension on DevValue {
                 onPressed: () async {
                   exitFunc();
                   await DrMem.setDevice(
-                      context, device, const DevBool(value: false));
+                      context, node, device, const DevBool(value: false));
                 },
                 child: const Text("false")),
           ),
@@ -239,7 +246,9 @@ class _DisplayValueWidget extends StatelessWidget {
 // new data arrives.
 
 class DataWidget extends StatefulWidget {
-  const DataWidget({super.key});
+  final String? node;
+
+  const DataWidget({this.node, super.key});
 
   @override
   State<DataWidget> createState() => _DataWidgetState();
@@ -270,12 +279,13 @@ class _DataWidgetState extends State<DataWidget> {
   Widget build(BuildContext context) {
     final editValue = _editValue;
 
-    return editValue != null
+    return editValue != null && widget.node != null
         ? Expanded(
             child: TapRegion(
               onTapOutside: (_) => setState(() => _editValue = null),
               child: editValue.buildEditor(
                 context,
+                widget.node!,
                 () => setState(() => _editValue = null),
               ),
             ),

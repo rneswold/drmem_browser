@@ -117,8 +117,8 @@ class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
 
   static const String clientIdText =
-      "When DrMem is configured to use excrypted connections, "
-      "clients must identify themselves with a difficult to guess "
+      "When DrMem is configured to use encrypted connections, "
+      "clients must identify themselves with a difficult-to-guess "
       "value called a \"Client ID\". The value displayed above is "
       "the client ID for this app. This value should be added to "
       "the `graphql.security.clients` array in the `drmem.toml` "

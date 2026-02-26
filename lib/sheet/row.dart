@@ -32,9 +32,9 @@ sealed class BaseRow {
       case {'type': "comment", 'content': String comment}:
         return CommentRow(comment, key: key ?? UniqueKey());
 
-      case {'type': "device", 'device': String device}:
-        return DeviceRow(Device(name: device, node: map['node'] ?? ""),
-            label: map['label'], key: key ?? UniqueKey());
+      case {'type': "device", 'device': String device, 'node': String node}:
+        return DeviceRow(Device(name: device),
+            node: node, label: map['label'], key: key ?? UniqueKey());
 
       case {'type': "plot"}:
         return PlotRow(key: key ?? UniqueKey());
@@ -125,9 +125,10 @@ class CommentRow extends BaseRow {
 
 class DeviceRow extends BaseRow {
   final Device? name;
+  final String? node;
   final String? label;
 
-  const DeviceRow(this.name, {this.label, required super.key});
+  const DeviceRow(this.name, {this.label, this.node, required super.key});
 
   @override
   Icon getIcon() => const Icon(Icons.developer_board);
@@ -138,11 +139,11 @@ class DeviceRow extends BaseRow {
 
   @override
   Widget buildRowRunner(BuildContext context) =>
-      DeviceWidget(label: label, device: name);
+      DeviceWidget(label: label, device: name, node: node);
 
   @override
   Map<String, dynamic> toJson() {
-    var tmp = {'type': "device", 'device': name?.name, 'node': name?.node};
+    var tmp = {'type': "device", 'device': name?.name, 'node': node};
 
     if (label != null && label!.isNotEmpty) {
       tmp['label'] = label!;
@@ -195,13 +196,13 @@ InputDecoration getTextFieldDecoration(BuildContext context, String label) {
       alignLabelWithHint: true,
       contentPadding: const EdgeInsets.all(12.0),
       hintStyle: td.textTheme.bodyMedium!
-          .copyWith(color: td.colorScheme.onSurface.withOpacity(0.25)),
+          .copyWith(color: td.colorScheme.onSurface.withValues(alpha: .25)),
       labelText: label,
       labelStyle: const TextStyle(color: Colors.grey),
       isDense: true,
-      hoverColor: td.colorScheme.secondary.withOpacity(0.25),
-      focusColor: td.colorScheme.primary.withOpacity(0.25),
-      fillColor: td.colorScheme.secondary.withOpacity(0.125),
+      hoverColor: td.colorScheme.secondary.withValues(alpha: .25),
+      focusColor: td.colorScheme.primary.withValues(alpha: .25),
+      fillColor: td.colorScheme.secondary.withValues(alpha: .125),
       border: InputBorder.none);
 }
 

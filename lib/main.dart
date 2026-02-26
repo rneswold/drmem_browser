@@ -23,7 +23,8 @@ Future<void> main() async {
   // Initialize (and load) data associated with the persistent store.
 
   HydratedBloc.storage = await HydratedStorage.build(
-      storageDirectory: await getApplicationDocumentsDirectory());
+      storageDirectory: HydratedStorageDirectory(
+          (await getApplicationDocumentsDirectory()).path));
 
   runApp(const DrMemApp());
 }
@@ -63,40 +64,27 @@ class _NodeUpdater extends StatelessWidget {
     context.read<Model>().state.getNodeNames().forEach((node) => DrMem.addNode(
         context, context.read<Model>().state.getNodeInfo(node)!, clientId));
 
-    return FutureBuilder(
-        future: DrMem.mdnsSubscribe(context),
+    return StreamBuilder(
+        stream: DrMem.mdnsSubscribe(context),
         builder: (context, snapshot) {
-          // If the snapshot has data, then the future completed. The value
-          // returned from the future is the stream of mDNS announcements.
+          // If the snapshot from the stream has data, then it's a node
+          // announcement. Report the information to the application.
 
           if (snapshot.hasData) {
-            dev.log("subscribed to mDNS", name: "foundation");
-            return StreamBuilder(
-                stream: snapshot.data,
-                builder: (context, snapshot) {
-                  // If the snapshot from the stream has data, then it's a node
-                  // announcement. Report the information to the application.
+            final data = snapshot.data!;
+            final nodeState = data.bootTime == null ? "lost" : "found";
 
-                  if (snapshot.hasData) {
-                    final nodeState =
-                        snapshot.data!.bootTime == null ? "lost" : "found";
+            dev.log("node ${data.name} was $nodeState", name: "nodeUpdater");
 
-                    dev.log("node ${snapshot.data!.name} was $nodeState",
-                        name: "foundation");
+            // Add the node to our persistent storage.
 
-                    // Add the node to our persistent storage.
+            context.read<Model>().add(AddNode(data));
 
-                    context.read<Model>().add(AddNode(snapshot.data!));
+            // Have DrMem create client connection objects to the node.
 
-                    // Have DrMem create client connection objects to the node.
-
-                    DrMem.addNode(context, snapshot.data!, clientId);
-                  }
-                  return child;
-                });
-          } else {
-            return const CircularProgressIndicator();
+            DrMem.addNode(context, data, clientId);
           }
+          return child;
         });
   }
 }
@@ -111,7 +99,7 @@ class _BaseWidget extends StatefulWidget {
 class _BaseState extends State<_BaseWidget> {
   int _selectIndex = 0;
 
-  void changePage(value) => setState(() => _selectIndex = value);
+  void changePage(int value) => setState(() => _selectIndex = value);
 
   // Creates the navigation bar. Right now it creates three icons to click on.
 

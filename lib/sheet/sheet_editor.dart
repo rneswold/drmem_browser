@@ -82,7 +82,7 @@ class _SheetEditorState extends State<SheetEditor> {
     return FilledButton.icon(
       style: ButtonStyle(
         backgroundColor: WidgetStatePropertyAll<Color>(
-            td.colorScheme.secondary.withOpacity(0.5)),
+            td.colorScheme.secondary.withValues(alpha: 0.5)),
       ),
       onPressed: cb(context),
       icon: const Icon(Icons.add),
