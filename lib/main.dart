@@ -1,4 +1,5 @@
 import "dart:developer" as dev;
+import "dart:async";
 
 import 'package:flutter/material.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
@@ -49,44 +50,57 @@ class DrMemApp extends StatelessWidget {
       ));
 }
 
-class _NodeUpdater extends StatelessWidget {
+class _NodeUpdater extends StatefulWidget {
   final Widget child;
 
   const _NodeUpdater({required this.child});
+
   @override
-  Widget build(BuildContext context) {
-    final clientId = context.read<Model>().state.clientId;
+  State<_NodeUpdater> createState() => _NodeUpdaterState();
+}
+
+class _NodeUpdaterState extends State<_NodeUpdater> {
+  StreamSubscription? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Defer initialization to ensure the widget tree is ready and context is valid.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initNodes());
+  }
+
+  void _initNodes() {
+    final model = context.read<Model>();
+    final clientId = model.state.clientId;
 
     dev.log("adding _NodeUpdater to context", name: "foundation");
 
-    // Register all the known DrMem nodes with the `DrMem` widget.
+    // Register all the known DrMem nodes.
+    model.state.getNodeNames().forEach((node) =>
+        DrMem.addNode(context, model.state.getNodeInfo(node)!, clientId));
 
-    context.read<Model>().state.getNodeNames().forEach((node) => DrMem.addNode(
-        context, context.read<Model>().state.getNodeInfo(node)!, clientId));
+    final state = this;
 
-    return StreamBuilder(
-        stream: DrMem.mdnsSubscribe(context),
-        builder: (context, snapshot) {
-          // If the snapshot from the stream has data, then it's a node
-          // announcement. Report the information to the application.
+    // Subscribe to mDNS updates.
+    _subscription = DrMem.mdnsSubscribe(context).listen((data) {
+      final nodeState = data.bootTime == null ? "lost" : "found";
 
-          if (snapshot.hasData) {
-            final data = snapshot.data!;
-            final nodeState = data.bootTime == null ? "lost" : "found";
+      dev.log("node ${data.name} was $nodeState", name: "nodeUpdater");
 
-            dev.log("node ${data.name} was $nodeState", name: "nodeUpdater");
+      model.add(AddNode(data));
 
-            // Add the node to our persistent storage.
-
-            context.read<Model>().add(AddNode(data));
-
-            // Have DrMem create client connection objects to the node.
-
-            DrMem.addNode(context, data, clientId);
-          }
-          return child;
-        });
+      if (state.mounted) DrMem.addNode(state.context, data, clientId);
+    });
   }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _BaseWidget extends StatefulWidget {
